@@ -7,6 +7,10 @@ import logging; logging.basicConfig(level=logging.INFO)
 import asyncio, aiomysql
 
 
+def log(sql, args=()):
+    logging.info('SQL: %s' % sql)
+
+
 async def create_pool(**kw):
     global __pool
     __pool = await aiomysql.create_pool(
@@ -22,32 +26,36 @@ async def create_pool(**kw):
     )
 
 
-async def select(sql,args,size=None):
+async def select(sql, args, size=None):
+    log(sql, args)
     global __pool
-    with (await __pool) as conn:
-        # Return dict
-        cur = conn.cursor(aiomysql.DictCursor)
-        await cur.execute(sql.replace('?', '%s'), args)
-        if size:
-            rs = await cur.fetchmany(size)
-        else:
-            rs = await cur.fetchall()
-        await cur.close()
+    async with __pool.get() as conn:
+        async with conn.cursor(aiomysql.DictCursor) as cur:
+            await cur.execute(sql.replace('?', '%s'), args or ())
+            if size:
+                rs = await cur.fetchmany(size)
+            else:
+                rs = await cur.fetchall()
+        logging.info('rows returned: %s' % len(rs))
         return rs
 
 
-async def execute(sql, args):
-    global __pool
-    try:
-        with (await __pool) as conn:
-            cur = conn.cursor()
-            await cur.execute(sql.replace('?', '%s'), args)
-            # Return column affected num
-            affected = cur.rowcount()
-            await cur.close()
-    except BaseException as e:
-        raise e
-    return affected
+async def execute(sql, args, autocommit=True):
+    log(sql)
+    async with __pool.get() as conn:
+        if not autocommit:
+            await conn.begin()
+        try:
+            async with conn.cursor(aiomysql.DictCursor) as cur:
+                await cur.execute(sql.replace('?', '%s'), args)
+                affected = cur.rowcount
+            if not autocommit:
+                await conn.commit()
+        except BaseException as e:
+            if not autocommit:
+                await conn.rollback()
+            raise
+        return affected
 
 
 # type is the metaclass of all classes in python
@@ -57,7 +65,7 @@ class ModelMetaClass(type):
     def __new__(cls, name, bases, attrs):
         if name == 'Model':
             return type.__new__(cls, name, bases, attrs)        # attrs = {'id': AField, 'name':BField, 'email':CField}
-        tableName = attrs.get['__table__', None] or name
+        tableName = attrs.get('__table__', None) or name
         logging.info('found model: %s (table: %s)' % (name, tableName))
         mappings = {}
         # the field names of non-primarykeys
@@ -112,7 +120,7 @@ class Model(dict, metaclass=ModelMetaClass):
 
     def __getattr__(self, key):
         try:
-            value = self[key]
+            return self[key]
         except KeyError:
             raise AttributeError(r"'Model' object has no attribute %s" % key)
 
@@ -137,6 +145,9 @@ class Model(dict, metaclass=ModelMetaClass):
     async def find(cls, pk):
         'find object by primary key'
         rs = await select('%s where `%s=?`' % (cls.__select__, cls.__primary_key__), [pk], 1)
+        if len(rs) == 0:
+            return None
+        return cls(**rs[0])
 
     @classmethod
     async def findAll(cls, where=None, args=None, **kw):
@@ -186,7 +197,7 @@ class Model(dict, metaclass=ModelMetaClass):
 
     async def save(self):
         args = [self.getValueOrDefault(self.__primary_key__)]
-        args.append(list(map(self.getValueOrDefault, self.__fields__)))
+        args.extend(list(map(self.getValueOrDefault, self.__fields__)))
         rows = await execute(self.__insert__, args)
         if rows != 1:
             logging.warning('failed to insert record: affected rows: %s' % rows)
@@ -221,6 +232,7 @@ class StringField(Field):
     def __init__(self, name=None, primary_key=False, default=None, ddl='varchar(100)'):
         super().__init__(name, ddl, primary_key, default)
 
+#Tintint(1) type in mysql
 class BooleanField(Field):
 
     def __init__(self, name=None, default=False):
