@@ -1,0 +1,54 @@
+{% extends '__base__.html' %}
+
+{% block title %}日志{% endblock %}
+
+{% block content %}
+
+    <div class="uk-width-3-4">
+        {% for blog in blogs %}
+            <article class="uk-article">
+                <h1 class="uk-article-title"><a class="uk-link-reset" href="/blog/{{ blog.id }}">{{ blog.name }}</a></h1>
+                <p class="uk-article-meta">发表于{{blog.created_at|datetime}}</p>
+                <p>{{ blog.summary }}</p>
+                <div class="uk-grid-small uk-child-width-auto" uk-grid>
+                    <div>
+                        <a class="uk-button uk-button-text" href="/blog/{{ blog.id }}">继续阅读</a>
+                    </div>
+                    <div>
+                        <a class="uk-button uk-button-text" href="#">5评论</a>
+                    </div>
+                    <div>
+                    {% if __user__.admin %}
+                    <a class="uk-button uk-button-text" href="/manage/blogs/create"><span class="uk-icon uk-margin-small-right" uk-icon="pencil"></span>编辑日志</a>
+                    {% endif %}
+                    </div>
+                </div>
+            </article>
+            <hr class="uk-article-divider">
+        {% endfor %}
+    </div>
+
+
+    <div class="uk-width-1-4">
+        <div class="tm-sidebar-right uk-visible@l">
+            <div uk-sticky="offset: 160" class="uk-sticky uk-sticky-fixed uk-active" style="position: fixed; top:160px; width:200px;">
+                <ul class="uk-nav uk-nav-default uk-nav-parent-icon">
+                    <li class="uk-active">
+                        <a>分类</a>
+                    </li>
+                    <li><a href=""> 编程</a></li>
+                    <li><a href=""> 读书</a></li>
+                    <li class="uk-nav-divider"></li>
+                    <li><a href="../assets/uikit/tests/margin.html" target="_blank">
+                        <span uk-icon="icon: push" class="uk-margin-small-right uk-icon"></span>
+                        <span class="uk-text-middle">Open test</span>
+                        </a>
+                    </li>
+                    <li><a href="https://github.com/uikit/uikit/issues" target="_blank"><span uk-icon="icon: warning" class="uk-margin-small-right uk-icon"></span> <span class="uk-text-middle">Report issue</span></a></li>
+                </ul>
+            </div>
+                <div class="uk-sticky-placeholder" style="height: 447.467px; margin: 0px;"></div>
+        </div>
+    </div>
+
+{% endblock %}

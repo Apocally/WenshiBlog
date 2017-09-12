@@ -1,0 +1,66 @@
+{% extends '__base__.html' %}
+
+{% block title %}登录{% endblock %}
+
+{% block beforehead %}
+
+<script>
+$(function() {
+    var vmAuth = new Vue({
+        el: '#vm',
+        data: {
+            email: '',
+            passwd: ''
+        },
+        methods: {
+            submit: function(event) {
+                event.preventDefault();
+                var
+                    $form = $('#vm'),
+                    email = this.email.trim().toLowerCase(),
+                    data = {
+                        email: email,
+                        passwd: this.passwd==='' ? '' : CryptoJS.SHA1(email + ':' + this.passwd).toString()
+                    };
+                $form.postJSON('/api/authenticate', data, function(err, result) {
+                    if (! err) {
+                        location.assign('/');
+                    }
+                });
+            }
+        }
+    });
+});
+
+</script>
+
+{% endblock %}
+
+{% block content %}
+
+    <div class="uk-width-2-3">
+        <h1>登录</h1>
+        <form id="vm" v-on:submit="submit" class="uk-form-stacked">
+            <div class="uk-alert uk-alert-danger uk-hidden"></div>
+
+            <div class="uk-margin">
+                <label class="uk-form-label">电子邮件:</label>
+                <div class="uk-form-controls">
+                    <input v-model="email" type="text" maxlength="50" placeholder="your-name@example.com" class="uk-input uk-width-2-3">
+                </div>
+            </div>
+
+            <div class="uk-margin">
+                <label class="uk-form-label">输入口令:</label>
+                <div class="uk-form-controls">
+                    <input v-model="passwd" name="passwd" type="password" maxlength="50" placeholder="输入口令" class="uk-input uk-width-2-3">
+                </div>
+            </div>
+
+            <div class="uk-margin">
+                <button type="submit" class="uk-button uk-button-default">登录</button>
+            </div>
+        </form>
+    </div>
+
+{% endblock %}
