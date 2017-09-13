@@ -3,7 +3,7 @@
 import time, re, hashlib, json, logging, markdown2
 from coroweb import get, post
 from models import User, Blog, Comment, next_id
-from apis import APIError, APIValueError, APIPermissionError, Page
+from apis import APIError, APIValueError, APIPermissionError, Page, APIResourceNotFoundError
 from aiohttp import web
 from config import configs
 
@@ -75,13 +75,14 @@ def get_page_index(page_str):
 
 
 @get('/')
-def index(request):
-    summary = 'Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'
-    blogs = [
-        Blog(id='1', name='Test Blog', summary=summary, created_at=time.time()-120),
-        Blog(id='2', name='Something New', summary=summary, created_at=time.time()-3600),
-        Blog(id='3', name='Learn Swift', summary=summary, created_at=time.time()-7200)
-    ]
+async def index(request):
+    # summary = 'Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.'
+    # blogs = [
+    #     Blog(id='1', name='Test Blog', summary=summary, created_at=time.time()-120),
+    #     Blog(id='2', name='Something New', summary=summary, created_at=time.time()-3600),
+    #     Blog(id='3', name='Learn Swift', summary=summary, created_at=time.time()-7200)
+    # ]
+    blogs = await Blog.findAll()
     return {
         '__template__': 'blogs.html',
         'blogs': blogs
@@ -222,3 +223,27 @@ def manage_blogs(*, page='1'):
         '__template__': 'manage_blogs.html',
         'page_index': get_page_index(page)
     }
+
+@post('/api/blogs/{id}/comments')
+async def api_create_comment(id, request, *, content):
+    user=request.__user__
+    if user is None:
+        raise APIPermissionError('Please signin first.')
+    if not content or not content.strip():
+        raise APIValueError('content')
+    blog = await Blog.find(id)
+    if blog is None:
+        raise APIResourceNotFoundError('Blog')
+    comment = Comment(blog_id=blog.id, user_id=user.id, user_name=user.name, user_image=user.image, content=content.strip())
+    await comment.save()
+    return comment
+
+
+@post('/api/comments/{id}/delete')
+async def api_delete_comments(id, request):
+    check_admin(request)
+    c = await Comment.find(id)
+    if c is None:
+        raise APIResourceNotFoundError('Comment')
+    await c.remove()
+    return dict(id=id)
