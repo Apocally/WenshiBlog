@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Coin Market</title>
+    <link rel="stylesheet" href="/static/css/uikit.min.css"/>
+    <link rel="stylesheet" href="/static/css/awesome.css" />
+    <script src="/static/js/jquery.min.js"></script>
+    <script src="/static/js/sha1.min.js"></script>
+    <script src="/static/js/uikit.min.js"></script>
+    <script src="/static/js/uikit-icons.min.js"></script>
+    <script src="/static/js/vue.min.js"></script>
+    <script src="/static/js/awesome.js"></script>
+    <script src="/static/js/FetchPrice1709.js"></script>
+</head>
+<body>
+<div class="uk-width-1-1 uk-inline">
+
+        <div class="uk-navbar-container uk-navbar-transparent uk-overlay uk-overlay-default uk-padding-remove uk-width-1-1" style="position: fixed; top: 0px; height: 80px; z-index:10;">
+            <div class="uk-container uk-container-expand">
+                <nav class="uk-navbar">
+                <div class="uk-navbar-left">
+                    <a class="uk-navbar-item uk-logo" href="/">闻·识</a>
+                    <ul class="uk-navbar-nav">
+                        <li><a href="/"><span class="uk-icon uk-margin-small-right" uk-icon="icon:home"></span>日志</a></li>
+                        <li><a href="https://github.com/Apocally/WenshiBlog"><span class="uk-icon uk-margin-small-right" uk-icon="icon:code"></span>源码</a></li>
+                        <li><a href="/coinmarket"><span class="uk-icon uk-margin-small-right" uk-icon="icon:world"></span>虚拟货币</a></li>
+                    </ul>
+                </div>
+
+                <div class="uk-navbar-right">
+                    <ul class="uk-navbar-nav">
+                        {% if __user__ %}
+                        <li>
+                            <a href="#0"><span class="uk-icon uk-margin-small-right" uk-icon="icon:user"> </span>{{ __user__.name }}</a>
+                            <div uk-dropdown>
+                                <ul class="uk-nav uk-dropdown-nav">
+                                    {% if __user__.admin %}
+                                        <li><a href="/manage/blogs/create"><span class="uk-icon uk-margin-small-right" uk-icon="pencil"></span>编辑日志</a></li>
+                                    {% endif %}
+                                    <li><a href="/signout"><span class="uk-icon uk-margin-small-right" uk-icon="sign-out"></span>登出</a></li>
+                                </ul>
+                            </div>
+                        </li>
+                        {% else %}
+                        <li><a href="/signin"><span class="uk-icon uk-margin-small-right" uk-icon="sign-in"></span>登陆</a></li>
+                        <li><a href="/register"><span class="uk-icon uk-margin-small-right" uk-icon="file-edit"></span>注册</a></li>
+                        {% endif %}
+                    </ul>
+                </div>
+                </nav>
+            </div>
+        </div>
+
+        <div class="uk-background-fixed uk-background-center uk-width-1-1 " style="background-image: url(/static/img/bgp.jpg); height:600px"></div>
+
+        <div uk-grid="" class="uk-overlay uk-position-bottom-center uk-grid" style="top:150px; width:1200px;height:460px;z-index:9;" uk-grid>
+            <div class="uk-text-center uk-grid uk-child-width-1-3@s">
+                <div>
+                    <div class="uk-card uk-card-secondary uk-card-body">
+                        <div class="uk-card-header">
+                            <h3 class="uk-card-title">Bitcoin</h3>
+                        </div>
+                        <div id="loading_bitcoin" class="uk-text-large uk-card-body">
+                            <div uk-spinner></div>
+                        </div>
+                        <div id="bitcoin" class="uk-text-large uk-card-body"></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="uk-card uk-card-secondary uk-card-body">
+                        <div class="uk-card-header">
+                            <h3 class="uk-card-title">Ethereum</h3>
+                        </div>
+                        <div id="loading_ethereum" class="uk-text-large uk-card-body">
+                            <div uk-spinner></div>
+                        </div>
+                        <div id="ethereum" class="uk-text-large uk-card-body"></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="uk-card uk-card-secondary uk-card-body">
+                        <div class="uk-card-header">
+                            <h3 class="uk-card-title">Litecoin</h3>
+                        </div>
+                        <div id="loading_litecoin" class="uk-text-large uk-card-body">
+                            <div uk-spinner></div>
+                        </div>
+                        <div id="litecoin" class="uk-text-large uk-card-body"></div>
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+</div>
+
+<table class="uk-table uk-table-striped uk-text-center">
+    <caption class="uk-text-center">Market</caption>
+    <thead>
+        <tr>
+            <th class="uk-text-center">Rank</th>
+            <th class="uk-text-center">Name</th>
+            <th class="uk-text-center">Symbol</th>
+            <th class="uk-text-center">Price($)</th>
+            <th class="uk-text-center">24h volume($)</th>
+            <th class="uk-text-center">Percent change 24h</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+<div id="loading_market">
+    <div uk-spinner></div>
+</div>
+
+
+<div class="uk-container uk-container-center uk-text-center">
+    <div class="uk-panel uk-margin-top uk-margin-bottom">
+        <p>
+            <a href="https://github.com/Apocally/" class="uk-icon-button uk-margin-small-right" uk-icon="icon: github"></a>
+            <a href="" class="uk-icon-button uk-margin-small-right" uk-icon="icon: linkedin"></a>
+            <a href="" class="uk-icon-button uk-margin-small-right" uk-icon="icon: twitter"></a>
+        </p>
+        <p>Powered by <a href="">Wenshi</a>. Copyright &copy; 2017. [<a href="/manage/" target="_blank">Manage</a>]</p>
+        <p><a href="" target="_blank">Wenshi</a>. All rights reserved.</p>
+    </div>
+</div>
+
+
+</body>
+</html>
