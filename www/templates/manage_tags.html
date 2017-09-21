@@ -1,0 +1,105 @@
+{% extends '__base__.html' %}
+
+{% block title %}日志{% endblock %}
+
+{% block beforehead %}
+
+<script>
+function initVM(results) {
+    var vm = new Vue({
+        el: '#vm',
+        data: {
+            tags: results.tags,
+            new_tag:'',
+        },
+        methods: {
+            add_new_tag: function (new_tag) {
+                $.get('/api/tags/add', {tag_name: new_tag}, function(){
+                    refresh();
+                });
+            },
+            delete_tag: function (tag) {
+                if (confirm('确认要删除“' + tag.tag_name + '”？删除后不可恢复！')) {
+                    $.get('/api/tags/remove', {tag_id: tag.tag_id}, function (err, r) {
+                        if (err) {
+                            return alert(err.message || err.error || err);
+                        }
+                        refresh();
+                    });
+                }
+            },
+
+        }
+    });
+    $('#vm').show();
+}
+$(function() {
+    getJSON('/api/tags', function (err, results) {
+        if (err) {
+            return fatal(err);
+        }
+        $('#loading').hide();
+        initVM(results);
+    });
+});
+</script>
+
+{% endblock %}
+
+{% block content %}
+
+    <div class="uk-width-1-1 uk-margin-bottom">
+        <div class="uk-panel uk-panel-box">
+            <ul class="uk-breadcrumb">
+                <li><a href="/manage/comments">评论</a></li>
+                <li><a href="/manage/blogs">日志</a></li>
+                <li><a href="/manage/users">用户</a></li>
+                <li class="uk-active">标签</li>
+            </ul>
+        </div>
+    </div>
+
+    <div id="error" class="uk-width-1-1">
+    </div>
+
+    <div id="loading" class="uk-width-1-1 uk-text-center">
+        <div uk-spinner></div>
+    </div>
+
+    <div v-cloak id="vm" class="uk-width-1-1">
+
+        <table class="uk-table uk-table-hover">
+            <thead>
+                <tr>
+                    <th>序号</th>
+                    <th>标签名</th>
+                    <th>创建时间</th>
+                    <th class="uk-table-small">操作</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                <tr v-for="tag in tags" >
+                    <td v-text="tag.tag_id"></td>
+                    <td v-text="tag.tag_name"></td>
+                    <td v-text="tag.created_at.toDateTime()"></td>
+                    <td>
+                        <a v-on:click="delete_tag(tag)" uk-icon="icon: trash" style="height:20px;width:20px;overflow:hidden"></a>
+                    </td>
+                </tr>
+                <tr>
+                    <td v-text="tags.length + 1"></td>
+                    <td>
+                        <input v-model.trim="new_tag" class="uk-input">
+                    </td>
+                    <td></td>
+                    <td>
+                        <a v-on:click="add_new_tag(new_tag)" uk-icon="icon: check" style="height:20px;width:20px;overflow:hidden"></a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <!-- <div v-component="pagination" v-with="page"></div>  -->
+    </div>
+
+{% endblock %}
