@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import time, re, hashlib, json, logging, markdown2
 from coroweb import get, post
-from models import User, Blog, Comment, next_id
+from models import User, Blog, Comment, next_id, Tag, Tagmap
 from apis import APIError, APIValueError, APIPermissionError, Page, APIResourceNotFoundError
 from aiohttp import web
 from config import configs
@@ -82,7 +82,7 @@ async def index(request):
     #     Blog(id='2', name='Something New', summary=summary, created_at=time.time()-3600),
     #     Blog(id='3', name='Learn Swift', summary=summary, created_at=time.time()-7200)
     # ]
-    blogs = await Blog.findAll()
+    blogs = await Blog.findAll(orderBy='created_at desc')
     return {
         '__template__': 'blogs.html',
         'blogs': blogs
@@ -127,11 +127,24 @@ def signout(request):
 
 
 @get('/manage/blogs/create')
-def manage_create_blog():
+async def manage_create_blog():
+    tags = await Tag.findAll()
     return {
         '__template__': 'manage_blog_edit.html',
         'id': '',
-        'action': '/api/blogs'
+        'action': '/api/blogs',
+        'tags': tags
+    }
+
+
+@get('/manage/blogs/edit')
+async def manage_edit_blog(*, id):
+    tags = await Tag.findAll()
+    return {
+        '__template__': 'manage_blog_edit.html',
+        'id': id,
+        'action': '/api/blogs/%s' % id,
+        'tags': tags
     }
 
 
@@ -199,9 +212,56 @@ async def api_create_blog(request, *, name, summary, content):
     return blog
 
 
+@post('/api/blogs/{id}')
+async def update_blog(id, request, *, name, summary, content, tags):
+    check_admin(request)
+    blog = await Blog.find(id)
+    if not name or not name.strip():
+        raise APIValueError('name', 'name cannot be empty.')
+    if not summary or not summary.strip():
+        raise APIValueError('summary', 'summary cannot be empty.')
+    if not content or not content.strip():
+        raise APIValueError('content', 'content cannot be empty.')
+    if not tags:
+        raise APIValueError('tags', 'tags cannot be empty.')
+    blog.name = name.strip()
+    blog.summary = summary.strip()
+    blog.content = content.strip()
+    await blog.update()
+    tags_old = await Tagmap.findAll("blog_id=?", [id])
+    if tags_old:
+        old_list = [str(x.tag_id) for x in tags_old]
+        tags_new = [str(x) for x in tags]
+        tags = list.copy(tags_new)
+        print(old_list,tags_new)
+        tags_new.extend(old_list)
+        tags_set = list(set(tags_new))
+        for each in tags_set:
+            if each not in old_list:
+                t = Tagmap(blog_id=id, tag_id=int(each))
+                await  t.save()
+            elif each not in tags:
+                tags_to_remove = await Tagmap.findAll('blog_id=? and tag_id=?', [id, int(each)])
+                for x in tags_to_remove:
+                    await x.remove()
+    else:
+        for each in tags:
+            t = Tagmap(blog_id=id, tag_id=each)
+            await  t.save()
+    return blog
+
+
+
+
+
 @get('/api/blogs/{id}')
 async def api_get_blog(*, id):
+    tag_list = []
     blog = await Blog.find(id)
+    tags = await Tagmap.findAll("blog_id=?", [id])
+    for each in tags:
+        tag_list.append(each.tag_id)
+    blog['tags'] = tag_list
     return blog
 
 
@@ -216,6 +276,49 @@ async def api_blogs(*, page='1'):
     blogs = await Blog.findAll(orderBy='created_at desc', limit=(p.offset, p.limit))
     return dict(page=p, blogs=blogs)
 
+
+@get('/manage/tags')
+async def manage_tags():
+    return  {
+        '__template__': 'manage_tags.html'
+    }
+
+@get('/api/tags')
+async def api_tags():
+    tags = await Tag.findAll()
+    return tags
+
+@get('/api/tags/add')
+async def api_add_tags(request, *, tag_name):
+    check_admin(request)
+    if not tag_name:
+        raise APIValueError('tag_name', 'Tag name cannot be empty')
+    t = Tag(tag_name=tag_name)
+    await t.save()
+    return dict(tag=t)
+
+
+@get('/api/tags/remove')
+async def api_remove_tags(request, *, tag_id):
+    check_admin(request)
+    t = await Tag.find(tag_id)
+    if t is None:
+        raise APIResourceNotFoundError('Tag')
+    await t.remove()
+    return dict(tag_id=tag_id)
+
+
+'''
+@get('/api/blogsviatag/{tag}')
+async def api_get_blogs_via_tag(*, tag):
+    tag = {
+        "programme": 1,
+        "game": 2,
+        "cuthand": 3,
+        "coins": 4,
+    }
+
+'''
 
 @get('/manage/blogs')
 def manage_blogs(*, page='1'):
@@ -247,3 +350,10 @@ async def api_delete_comments(id, request):
         raise APIResourceNotFoundError('Comment')
     await c.remove()
     return dict(id=id)
+
+
+@get('/coinmarket')
+def coinmarket():
+    return {
+        '__template__': 'coinmarketindex.html'
+    }
