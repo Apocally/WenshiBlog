@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-from orm import Model, StringField, BooleanField, FloatField, TextField
+from orm import Model, StringField, BooleanField, FloatField, TextField, IntegerField
 import time, uuid
 
 __author__ = 'Wenshi'
@@ -43,4 +43,17 @@ class Comment(Model):
     user_name = StringField(ddl='varchar(50)')
     user_image = StringField(ddl='varchar(500)')
     content = TextField()
+    created_at = FloatField(default=time.time)
+
+class Tagmap(Model):
+    __table__ = 'tagmap'
+    id = IntegerField(primary_key=True)
+    blog_id = StringField(ddl='varchar(50)')
+    tag_id = StringField(ddl='varchar(50)')
+
+
+class Tag(Model):
+    __table__ = 'tags'
+    tag_id = IntegerField(primary_key=True)
+    tag_name = StringField(ddl='varchar(50)')
     created_at = FloatField(default=time.time)
