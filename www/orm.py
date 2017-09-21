@@ -144,7 +144,7 @@ class Model(dict, metaclass=ModelMetaClass):
     @classmethod
     async def find(cls, pk):
         'find object by primary key'
-        rs = await select('%s where `%s=?`' % (cls.__select__, cls.__primary_key__), [pk], 1)
+        rs = await select('%s where `%s`=?' % (cls.__select__, cls.__primary_key__), [pk], 1)
         if len(rs) == 0:
             return None
         return cls(**rs[0])
@@ -159,7 +159,7 @@ class Model(dict, metaclass=ModelMetaClass):
         - limit  5, 15  检索记录行6-15
         '''
 
-        sql = cls.__select__
+        sql = [cls.__select__]
         if where:
             sql.append('where')
             sql.append(where)
@@ -194,6 +194,15 @@ class Model(dict, metaclass=ModelMetaClass):
         if len(rs) == 0:
             return None
         return rs[0]['_num_']
+
+    @classmethod
+    async def findIn2Tables(cls, t1,t2,t1_t2_pk, field2, value2):
+        fields = [(cls.__primary_key__ + ',' + ','.join(cls.__fields__))]
+        [new_fields] = ['%s.' % cls.__table__ + x for x in fields]
+        sql = 'select %s from %s left join %s on %s where %s' % (new_fields, t1, t2, t1_t2_pk, field2)
+        print(sql)
+        rs = await select(sql, value2)
+        return [cls(**r) for r in rs]
 
     async def save(self):
         args = [self.getValueOrDefault(self.__primary_key__)]
