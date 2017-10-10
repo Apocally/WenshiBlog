@@ -196,12 +196,16 @@ class Model(dict, metaclass=ModelMetaClass):
         return rs[0]['_num_']
 
     @classmethod
-    async def findIn2Tables(cls, t1,t2,t1_t2_pk, field2, value2):
+    async def findIn2Tables(cls, t1,t2,t1_t2_pk, field2, value2, **kw):
         fields = [(cls.__primary_key__ + ',' + ','.join(cls.__fields__))]
         [new_fields] = ['%s.' % cls.__table__ + x for x in fields]
-        sql = 'select %s from %s left join %s on %s where %s' % (new_fields, t1, t2, t1_t2_pk, field2)
-        print(sql)
-        rs = await select(sql, value2)
+        sql = ['select %s from %s left join %s on %s where %s=?' % (new_fields, t1, t2, t1_t2_pk, field2)]
+        orderBy = kw.get('orderBy', None)
+        if orderBy:
+            sql.append('order by')
+            sql.append(orderBy)
+        # print(sql)
+        rs = await select(' '.join(sql), value2)
         return [cls(**r) for r in rs]
 
     async def save(self):
