@@ -1,0 +1,97 @@
+{% extends '__base__.html' %}
+
+{% block title %}日志{% endblock %}
+
+{% block beforehead %}
+
+<script>
+function initVM(data) {
+    var vm = new Vue({
+        el: '#vm',
+        data: {
+            comments: data.comments,
+            page: data.page
+        },
+        methods: {
+            delete_comment: function (comment) {
+                if (confirm('确认要删除“' + comment.id + '”？删除后不可恢复！')) {
+                    postJSON('/api/comments/' + comment.id + '/delete', function (err, r) {
+                        if (err) {
+                            return alert(err.message || err.error || err);
+                        }
+                        refresh();
+                    });
+                }
+            }
+        }
+    });
+    $('#vm').show();
+}
+$(function() {
+    getJSON('/api/comments', {
+        page: {{ page_index }}
+    }, function (err, results) {
+        if (err) {
+            return fatal(err);
+        }
+        $('#loading').hide();
+        initVM(results);
+    });
+});
+</script>
+
+{% endblock %}
+
+{% block content %}
+
+    <div class="uk-width-1-1 uk-margin-bottom">
+        <div class="uk-panel uk-panel-box">
+            <ul class="uk-breadcrumb">
+                <li class="uk-active">评论</li>
+                <li><a href="/manage/blogs">日志</a></li>
+                <li><a href="/manage/users">用户</a></li>
+                <li><a href="/manage/tags">标签</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <div id="error" class="uk-width-1-1">
+    </div>
+
+    <div id="loading" class="uk-width-1-1 uk-text-center">
+        <div uk-spinner></div>
+    </div>
+
+    <div v-cloak id="vm" class="uk-width-1-1">
+
+        <table class="uk-table uk-table-hover">
+            <thead>
+                <tr>
+                    <th class="uk-table-expand">内容</th>
+                    <th class="uk-table-small">作者</th>
+                    <th class="uk-table-small">创建时间</th>
+                    <th class="uk-table-small">操作</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                <tr v-for="comment in comments" >
+                    <td>
+                        <a target="_blank" :href="'/blog/'+comment.blog_id" v-text="comment.content" class="uk-text-truncate"></a>
+                    </td>
+                    <td>
+                        <a target="_blank" :href="'/user/'+comment.user_id" v-text="comment.user_name"></a>
+                    </td>
+                    <td>
+                        <span v-text="comment.created_at.toDateTime()"></span>
+                    </td>
+                    <td>
+                        <a v-on:click="delete_comment(comment)" uk-icon="icon: trash" style="height:20px;width:20px;overflow:hidden"></a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <!-- <div v-component="pagination" v-with="page"></div>  -->
+    </div>
+
+{% endblock %}
